@@ -9,6 +9,9 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.locks.Condition;
 
 public class CarDiagnosticEngine {
 
@@ -39,7 +42,48 @@ public class CarDiagnosticEngine {
 		 * console output is as least as informative as the provided methods.
 		 */
 
+		boolean flag = false;
 
+		// Stage 1 - missing fields
+		if (car.getYear() == null) {
+			System.out.println("Missing Car Year Detected");
+			flag = true;
+		}
+
+		if (car.getMake() == null) {
+			System.out.println("Missing Car Make Detected");
+			flag = true;
+		}
+
+		if (car.getModel() == null) {
+			System.out.println("Missing Car Model Detected");
+			flag = true;
+		}
+
+		if (flag) return; // End diagnostics early as validation failed.
+
+		// Stage 2 - missing parts
+		Map <PartType, Integer> missingParts = car.getMissingPartsMap();
+		for (Map.Entry<PartType, Integer> entry : missingParts.entrySet()) {
+			printMissingPart(entry.getKey(), entry.getValue());
+            flag = true;
+		}
+
+		if (flag) return; // End diagnostics early as validation failed.
+
+		// Stage 3 - non-working parts
+		List<Part> parts = car.getParts();
+		for (Part part : parts) {
+			ConditionType condition = part.getCondition();
+			if (condition != ConditionType.NEW && condition != ConditionType.GOOD && condition != ConditionType.WORN) {
+				printDamagedPart(part.getType(), part.getCondition());
+				flag = true;
+			}
+		}
+
+		if (flag) return; // End diagnostics early as validation failed.
+
+		System.out.println("Car passes all diagnostic tests.");
 	}
 
 	private void printMissingPart(PartType partType, Integer count) {
